@@ -316,10 +316,10 @@
     },
     computed: {
       imgPath1() {
-        return 'http://leshuibao.cn:7070/api/suppliment/printIC?payeeId=' + this.payee.payeeCidno + '&payeeName=' + this.payee.payeeName + '&isFront=1'
+        return 'http://leshuibao.cn:7070/api/suppliment/printIC?payeeId=' + this.payee.payeeCidno + '&payeeName=' + this.payee.payeeName + '&isFront=1' + '&randomInt=' + Math.random()
       },
       imgPath2() {
-        return 'http://leshuibao.cn:7070/api/suppliment/printIC?payeeId=' + this.payee.payeeCidno + '&payeeName=' + this.payee.payeeName + '&isFront=2'
+        return 'http://leshuibao.cn:7070/api/suppliment/printIC?payeeId=' + this.payee.payeeCidno + '&payeeName=' + this.payee.payeeName + '&isFront=2' + '&randomInt=' + Math.random()
       }
     }
   }

@@ -8,7 +8,7 @@
           </div>
           <div class="headerRight">
             <b class="logo">&nbsp</b>
-            <el-button type="info" plain size="small" style="font-size: 14px" @click="showOrders">点击刷新状态</el-button>
+            <el-button type="info" plain size="small" style="font-size: 14px" @click="refresh">点击刷新状态</el-button>
             &nbsp&nbsp
             <!-- <router-link to="/tradinghall" style="text-decoration: none;"><b class="linked">开票系统</b></router-link>
             <b style="color: #999999;">&nbsp|&nbsp</b>
@@ -24,17 +24,17 @@
         <div class="main">
           <div class="content">
             <div class="content">
-              <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="handleCheckAllChange">全部订单
+              <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="handleCheckAllChange" :disabled="isDisAble">全部订单
               </el-checkbox>
             </div>
             <div class="content" style="width: 200px"/>
             <div class="content">
-              <el-checkbox-group v-model="checkedIterms" @change="handleCheckedItermsChange">
+              <el-checkbox-group v-model="checkedIterms" @change="handleCheckedItermsChange" :disabled="isDisAble">
                 <el-checkbox v-for="iterm in iterms" :label="iterm" :key="iterm">{{iterm}}</el-checkbox>
               </el-checkbox-group>
             </div>
             <div style="margin-top: 30px;">
-              <el-table :data="tableData">
+              <el-table :data="tableData" v-loading="loading">
                 <el-table-column prop="createdTime" label="开票日期" width="100"></el-table-column>
                 <el-table-column prop="payeeName" label="抬头" width="220"></el-table-column>
                 <el-table-column prop="totalAmount" label="开票金额" width="100"></el-table-column>
@@ -47,6 +47,20 @@
                   </template>
                 </el-table-column>
               </el-table>
+            </div>
+            <br>
+            <div class="block">
+              <!-- <span class="demonstration"></span> -->
+              <el-pagination
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+                :current-page="currentPage4"
+                :page-sizes="[10]"
+                :page-size="10"
+                layout="total, prev, pager, next, jumper"
+                :total="total"
+                :disabled="isDisAble">
+              </el-pagination>
             </div>
           </div>
         </div>
@@ -79,32 +93,80 @@
         iterms: itermOptions,
         isIndeterminate: true,
         tableData: [],
-        isIndeterminate: true
+        loading: true,
+        isDisAble: true,
+        currentPage4: 1,
+        total: 70,
       }
     },
     created() {
-      this.showOrders()
+      this.showOrders(1, 10)
+      this.getAllOrdersCount()
     },
     methods: {
+      refresh(){
+        this.showOrders(1, 10)
+        this.getAllOrdersCount()
+        this.currentPage4 = '1'
+      },
       handleCheckAllChange(val) {
         this.checkedIterms = val ? itermOptions : []
         this.isIndeterminate = false
-        this.showOrders()
+        this.showOrders(1, 10)
+        this.getAllOrdersCount()        
+        this.currentPage4 = '1'
       },
       handleCheckedItermsChange(value) {
         let checkedCount = value.length
         this.checkAll = checkedCount === this.iterms.length
         this.isIndeterminate = checkedCount > 0 && checkedCount < this.iterms.length
-        this.showOrders()
+        this.showOrders(1, 10)
+        this.getAllOrdersCount()     
+        this.currentPage4 = '1'
       },
-      showOrders() {
+      getAllOrdersCount(){
         var showOrdersReqData = {
           userId: sessionStorage.getItem('userId'),
           auditStatus: this.checkedIterms,
           startPageNum: 1,
-          pageRange: 10
+          pageRange: 10000000
+        }
+        if (this.checkedIterms.length == 0) {
+          this.tableData = []
+          this.currentPage4 = 1
+          this.total = 0
+          return
         }
         this.$http.ShowOrdersForAdmin(showOrdersReqData).then((result) => {
+          this.loading = false
+          this.isDisAble = false
+          if (result.c === 200) {
+            this.total = result.r.length
+            this.currentPage4 = 1
+          } else {
+            this.currentPage4 = 1
+            this.total = 0
+          }
+        }, (err) => {
+          this.$message.error(err.msg)
+        })        
+        this.loading = true
+        this.isDisAble = true
+      },
+      showOrders(startPageNum, pageRange) {
+        var showOrdersReqData = {
+          userId: sessionStorage.getItem('userId'),
+          auditStatus: this.checkedIterms,
+          startPageNum: startPageNum,
+          pageRange: pageRange
+        }
+        if (this.checkedIterms.length == 0) {
+          this.tableData = []
+          return
+        }
+        this.$http.ShowOrdersForAdmin(showOrdersReqData).then((result) => {
+          this.loading = false
+          this.isDisAble = false
           if (result.c === 200) {
             this.tableData = result.r
           } else {
@@ -114,11 +176,19 @@
         }, (err) => {
           this.$message.error(err.msg)
           // this.searchLoading = false
-        })
+        })        
+        this.loading = true
+        this.isDisAble = true
       },
       handleEdit(index, row) {
         sessionStorage.setItem('orderId', row.orderId)
         this.$router.push({name: 'OrderShow', params: {orderId: row.orderId}})
+      },
+      handleSizeChange(val) {
+        
+      },
+      handleCurrentChange(val) {
+        this.showOrders(val, 10)
       }
     }
   }
